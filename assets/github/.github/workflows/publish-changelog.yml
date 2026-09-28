@@ -1,0 +1,73 @@
+# Publishes the released version's changelog entry to the website.
+#
+# Repo settings → Secrets and variables → Actions
+#   Secrets:   CHANGELOG_ENDPOINT   https://<site>/wp-json/changelog-sync/v1/entry
+#              CHANGELOG_SECRET     same value as CHANGELOG_SYNC_SECRET on the site
+#   Variables: CHANGELOG_PRODUCT        slug, e.g. notificationx       (default: repo name)
+#              CHANGELOG_PRODUCT_NAME   label, e.g. NotificationX      (default: slug)
+#              CHANGELOG_README         path, e.g. readme.txt          (default: readme.txt)
+#              CHANGELOG_STATUS         publish | draft                (default: publish)
+#              CHANGELOG_DATE_ORDER     dmy | mdy for 01/02/2026 dates (default: dmy)
+name: Publish changelog
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to send (blank = top entry of readme.txt)"
+        required: false
+      status:
+        description: "Post status on the site"
+        type: choice
+        options: [default, publish, draft]
+        default: default
+      all:
+        description: "Backfill: send EVERY entry in readme.txt (safe to repeat)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: changelog-${{ github.repository }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    # Pre-releases (RC/beta) never reach the public changelog.
+    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4   # on release: checks out the release tag
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Extract changelog entry
+        env:
+          CHANGELOG_PRODUCT: ${{ vars.CHANGELOG_PRODUCT }}
+          CHANGELOG_PRODUCT_NAME: ${{ vars.CHANGELOG_PRODUCT_NAME }}
+          CHANGELOG_README: ${{ vars.CHANGELOG_README || 'readme.txt' }}
+          CHANGELOG_DATE_ORDER: ${{ vars.CHANGELOG_DATE_ORDER || 'dmy' }}
+          CHANGELOG_STATUS: ${{ (inputs.status && inputs.status != 'default') && inputs.status || vars.CHANGELOG_STATUS || 'publish' }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_ALL: ${{ inputs.all }}
+        run: |
+          set -euo pipefail
+          ARGS=()
+          if [ "${INPUT_ALL:-false}" = "true" ]; then ARGS+=(--all);
+          elif [ -n "${INPUT_VERSION:-}" ]; then ARGS+=(--version "$INPUT_VERSION"); fi
+          node .github/scripts/parse-changelog.js "${ARGS[@]}" > entry.json
+          echo '### Changelog payload' >> "$GITHUB_STEP_SUMMARY"
+          { echo '```json'; cat entry.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Send to website
+        env:
+          CHANGELOG_ENDPOINT: ${{ secrets.CHANGELOG_ENDPOINT }}
+          CHANGELOG_SECRET: ${{ secrets.CHANGELOG_SECRET }}
+        run: node .github/scripts/send-changelog.js entry.json

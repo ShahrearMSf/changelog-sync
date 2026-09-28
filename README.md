@@ -80,6 +80,38 @@ Then ask Claude Code something like "set up changelog sync for our plugin", or r
 
 **3. Every release after that:** update `readme.txt` as usual and publish the GitHub Release. The entry is live within about a minute.
 
+## Adding the changelog to a page
+
+The plugin does not look for a page. Entries are stored under **Changelog** in wp-admin, and
+any page that contains the shortcode shows them, updating by itself on every release.
+
+| Shortcode | Shows |
+|---|---|
+| `[changelog]` | All products, each entry labelled with its product |
+| `[changelog product="my-plugin"]` | One product (slug = the repo's `CHANGELOG_PRODUCT`) |
+| `[changelog product="my-plugin,my-plugin-pro" per_page="15"]` | Free + Pro together |
+
+`per_page` defaults to 10. Older entries are paged with `?cl-page=2`, and each version has an anchor, e.g. `/changelog/#v3-3-1`.
+
+**Where to put it, by editor**
+
+| Editor | How |
+|---|---|
+| Gutenberg (block editor) | Add a **Shortcode** block and paste the shortcode |
+| Classic editor | Paste the shortcode into the content |
+| Elementor (free or Pro) | Drag in the **Shortcode** widget and paste the shortcode. Works in a normal page or in an Elementor Pro Theme Builder template |
+| Other page builders (Divi, Beaver, Bricks…) | Their Shortcode or Text module |
+| Theme template (PHP) | `<?php echo do_shortcode( '[changelog product="my-plugin"]' ); ?>` |
+
+**Elementor notes** (tested on Elementor 4.2 + Pro 4.2)
+- New releases appear immediately, including when Elementor's **Element Caching** is on. Elementor treats the Shortcode widget as dynamic content and renders it fresh on every request.
+- Leave the widget's **Advanced → Cache Settings** at its default. If you force caching on for that widget, new releases only show when the cache expires.
+- Elementor has no style controls for shortcode output. Style it with the `cl-*` classes (listed below) in Elementor Pro's Custom CSS, or in Appearance → Customize → Additional CSS.
+
+**Styling.** The plugin ships minimal CSS that follows the theme's fonts and colors. Classes you can style: `cl-list`, `cl-entry`, `cl-head`, `cl-product`, `cl-version`, `cl-date`, `cl-items`, `cl-item`, `cl-tag`, `cl-type-added` / `-fixed` / `-improved` / `-security`…, and `cl-pages`.
+
+**Editing an entry by hand.** Go to wp-admin → Changelog, open the entry and edit it. Tick **Keep my edits** so the next release run doesn't overwrite it.
+
 ## Supported changelog format
 
 ```
@@ -98,7 +130,7 @@ Supported date formats are `dd/mm/yyyy` (the default), `mm/dd/yyyy`, `yyyy-mm-dd
 
 ## Tested
 
-End to end, from a private GitHub repo to a remote WordPress host. The test covered release publish, pre-release skip, manual backfill, re-send, draft, "Keep my edits", trash and HTML/XSS text. It also parsed real-world changelogs with 34 and 83 versions without error.
+End to end, from a private GitHub repo to a remote WordPress host. The test covered release publish, pre-release skip, manual backfill, re-send, draft, "Keep my edits", trash and HTML/XSS text. Rendering was also checked on an Elementor page (Shortcode widget, with Element Caching on): new entries appeared immediately. It also parsed real-world changelogs with 34 and 83 versions without error.
 
 ## License
 

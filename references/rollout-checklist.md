@@ -28,12 +28,13 @@
 ## Go-live steps
 
 1. Test site first: same plugin on a public test WP site + a private test repo; run a release, a pre-release and a backfill.
-2. Install plugin on production, set secret, run `scripts/verify-endpoint.sh` (expect 401 then 422).
-3. Create the page **as draft/private** first.
-4. Merge workflow into one product repo, set secrets/vars, run backfill with status `draft`.
-5. Review drafts in wp-admin (Changelog menu) → bulk-publish → publish the page.
-6. Roll out to the remaining repos; backfill each.
-7. Watch the next real release end-to-end.
+2. Run `scripts/preflight.sh` on each product repo — all must say `READY`.
+3. Install plugin on production, set secret, run `scripts/verify-endpoint.sh` (expect 401 then 422).
+4. Create the page **as draft/private** first.
+5. Merge workflow into one product repo, set secrets/vars, run backfill with status `draft`.
+6. Review drafts in wp-admin (Changelog menu) → bulk-publish → publish the page.
+7. Roll out to the remaining repos; backfill each.
+8. Watch the next real release end-to-end.
 
 ## Rollback
 - Stop sending: delete/rename the repo secret or disable the workflow.

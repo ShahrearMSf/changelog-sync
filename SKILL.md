@@ -21,6 +21,7 @@ assets/wordpress/changelog-sync.php                     → website (plugin or m
 scripts/package-plugin.sh      build changelog-sync.zip for wp-admin upload
 scripts/verify-endpoint.sh     prove endpoint + secret without creating content
 scripts/preview-entry.sh       show the exact payload a release would send (no network)
+scripts/preflight.sh           check a product repo before its first release (read-only)
 references/rollout-checklist.md   what to ask for, who does what, go-live steps
 references/behaviour.md           every case the site handles + payload format
 references/troubleshooting.md     symptom → cause → fix
@@ -45,7 +46,14 @@ Use `references/rollout-checklist.md` → "What to ask for". Minimum: site URL +
 (or someone who can install a plugin), list of product repos, where the page lives, publish vs
 draft, and whether a WAF/cache sits in front.
 
-### 2. Preview before touching anything
+### 2. Preflight + preview before touching anything
+```bash
+scripts/preflight.sh /path/to/product-repo            # READY / NOT READY + reasons
+scripts/preflight.sh /path/to/product-repo v3.3.1     # also checks the tag has an entry
+```
+It checks: workflow files present, readme found (any letter case), dates parse, no duplicate
+versions, newest-first order, `Stable tag` = top entry, tag ↔ entry. Fix every ✗ before releasing.
+
 ```bash
 scripts/preview-entry.sh /path/to/product/readme.txt notificationx "NotificationX"          # top entry
 scripts/preview-entry.sh /path/to/product/readme.txt notificationx "NotificationX" --all    # backfill
@@ -70,7 +78,8 @@ product writes US dates.
 2. Secrets: `CHANGELOG_ENDPOINT` (from Changelog → Settings), `CHANGELOG_SECRET`.
    Many repos → one **org-level** secret pair scoped to those repos.
 3. Variables: `CHANGELOG_PRODUCT` (slug — Free and Pro need different slugs),
-   `CHANGELOG_PRODUCT_NAME`; optional `CHANGELOG_README` (Pro/monorepo path),
+   `CHANGELOG_PRODUCT_NAME`; optional `CHANGELOG_README` (only if the readme is not at the repo root — letter case
+   `readme.txt` / `README.txt` is matched automatically),
    `CHANGELOG_STATUS=draft`, `CHANGELOG_DATE_ORDER=mdy`.
 4. Backfill: Actions → Publish changelog → Run workflow → tick **all**. Safe to repeat.
 

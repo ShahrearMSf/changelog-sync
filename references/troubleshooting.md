@@ -4,6 +4,7 @@
 |---|---|---|
 | `CHANGELOG_ENDPOINT and CHANGELOG_SECRET must be set` | Secrets missing, or org secret not granted to this repo | Add repo secrets / grant repo access to the org secret |
 | Run shows **skipped** | Release is marked pre-release | Intended. Publish a full release or run manually |
+| `readme.txt not found (any letter case)` | Readme is not at the repo root (e.g. in a subfolder) | Set `CHANGELOG_README` to its path, e.g. `plugin/readme.txt` |
 | `Version X not found … and the release has no notes` | Tag ≠ readme version (e.g. tag `3.3.1-hotfix`, readme `3.3.1`) or readme not updated before tagging | Fix readme on the tagged commit, or run manually with the right `version` |
 | `::warning:: … used the GitHub Release notes instead` | Same as above but release had notes | Entry was posted from notes; update readme + re-run to replace |
 | `::warning::Could not parse date` | Unusual date format in header | Use `dd/mm/yyyy`; the entry falls back to release date / neighbour date |
@@ -21,6 +22,7 @@
 
 ## Quick diagnostics
 ```bash
+scripts/preflight.sh /path/to/product-repo v3.3.1     # catches most problems before a release
 gh run list -R OWNER/REPO --workflow publish-changelog.yml --limit 5
 gh run view <id> -R OWNER/REPO --log | grep -E "✓|::warning|::error|error\]"
 scripts/verify-endpoint.sh https://site.com /path/to/secret-file

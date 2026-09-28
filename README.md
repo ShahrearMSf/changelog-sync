@@ -49,6 +49,7 @@ scripts/
   package-plugin.sh              build changelog-sync.zip for wp-admin upload
   verify-endpoint.sh             check site + secret without creating content (401 then 422 = OK)
   preview-entry.sh               show what a release would send (no network)
+  preflight.sh                   check a product repo before its first release (READY / NOT READY)
 ```
 
 ## Install the skill
@@ -72,9 +73,9 @@ Then ask Claude Code something like "set up changelog sync for our plugin", or r
 5. `scripts/verify-endpoint.sh https://example.com secret.txt` should report `OK`.
 
 **2. Each product repo**
-1. Copy `assets/github/.github/` into the repo's default branch.
+1. Copy `assets/github/.github/` into the repo's default branch, then run `scripts/preflight.sh <repo-dir>`. It must say `READY`.
 2. Add the secrets `CHANGELOG_ENDPOINT` (shown in Changelog → Settings) and `CHANGELOG_SECRET`.
-3. Add the variables `CHANGELOG_PRODUCT` (slug) and `CHANGELOG_PRODUCT_NAME` (label). Optional: `CHANGELOG_README`, `CHANGELOG_STATUS` (`publish`|`draft`), `CHANGELOG_DATE_ORDER` (`dmy`|`mdy`).
+3. Add the variables `CHANGELOG_PRODUCT` (slug) and `CHANGELOG_PRODUCT_NAME` (label). Optional: `CHANGELOG_README` (only when the readme isn't at the repo root; `readme.txt` and `README.txt` are both found automatically), `CHANGELOG_STATUS` (`publish`|`draft`), `CHANGELOG_DATE_ORDER` (`dmy`|`mdy`).
 4. Go to Actions → **Publish changelog** → Run workflow, and tick **all** to load old versions.
 
 **3. Every release after that:** update `readme.txt` as usual and publish the GitHub Release. The entry is live within about a minute.
@@ -98,3 +99,7 @@ Supported date formats are `dd/mm/yyyy` (the default), `mm/dd/yyyy`, `yyyy-mm-dd
 ## Tested
 
 End to end, from a private GitHub repo to a remote WordPress host. The test covered release publish, pre-release skip, manual backfill, re-send, draft, "Keep my edits", trash and HTML/XSS text. It also parsed real-world changelogs with 34 and 83 versions without error.
+
+## License
+
+GPL-2.0-or-later, the same as WordPress. See [LICENSE](LICENSE).

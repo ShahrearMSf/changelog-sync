@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# Check a product repo BEFORE its first release. Read-only: nothing is written or sent.
+# Usage: preflight.sh <repo-dir> [release-tag] [readme-path-inside-repo]
+#   preflight.sh ~/code/notificationx
+#   preflight.sh ~/code/notificationx-pro v3.3.0 README.txt
+# Exit 0 = ready (warnings allowed), 1 = something will fail.
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")/.." && pwd)"
+REPO="${1:?usage: preflight.sh <repo-dir> [release-tag] [readme-path]}"
+TAG="${2:-}"; README="${3:-${CHANGELOG_README:-readme.txt}}"
+cd "$REPO"
+PARSER="$HERE/assets/github/.github/scripts/parse-changelog.js" TAG="$TAG" README="$README" node <<'JS'
+const fs = require('fs');
+const { parseReadme, resolveReadme } = require(process.env.PARSER);
+let errors = 0, warns = 0;
+const ok = (m) => console.log('  ✓ ' + m);
+const warn = (m) => { warns++; console.log('  ! ' + m); };
+const fail = (m) => { errors++; console.log('  ✗ ' + m); };
+const cmp = (a, b) => {
+  const x = a.match(/\d+/g) || [], y = b.match(/\d+/g) || [];
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    const d = (+x[i] || 0) - (+y[i] || 0);
+    if (d) return d;
+  }
+  return 0;
+};
+
+console.log('Workflow files');
+for (const f of ['.github/workflows/publish-changelog.yml', '.github/scripts/parse-changelog.js', '.github/scripts/send-changelog.js']) {
+  fs.existsSync(f) ? ok(f) : warn(`${f} missing (copy from assets/github/)`);
+}
+
+console.log('Readme');
+const wanted = process.env.README;
+// Case-sensitive exists, like the Linux runner.
+const path = resolveReadme(wanted);
+const exact = path === wanted;
+if (!path) { fail(`${wanted} not found in any letter case`); report(); }
+exact ? ok(`found ${path}`) : ok(`found ${path} (as "${wanted}"; letter case differs — handled automatically)`);
+const src = fs.readFileSync(path, 'utf8');
+
+let entries = [];
+try { entries = parseReadme(src); } catch (e) { fail(e.message); report(); }
+entries.length ? ok(`${entries.length} changelog entries`) : fail('no entries under == Changelog ==');
+if (!entries.length) report();
+
+console.log('Entries');
+const top = entries[0];
+top.dated ? ok(`top entry ${top.version} dated ${top.date}`) : warn(`top entry ${top.version} has no parsable date ("${top.date_raw}") — release date will be used`);
+top.items.length ? ok(`top entry has ${top.items.length} items`) : fail(`top entry ${top.version} has no items`);
+
+const bad = entries.filter((e) => e.date_raw && !e.dated);
+bad.length ? warn(`unparsable dates: ${bad.map((e) => `${e.version} "${e.date_raw}"`).join(', ')}`) : ok('all dates parse');
+const undated = entries.filter((e) => !e.date_raw);
+if (undated.length) warn(`no date on: ${undated.map((e) => e.version).join(', ')} (they borrow the newer entry's date)`);
+const empty = entries.filter((e) => !e.items.length);
+if (empty.length) warn(`no items on: ${empty.map((e) => e.version).join(', ')} (skipped by the site)`);
+
+const seen = new Set(), dups = [];
+for (const e of entries) { if (seen.has(e.version)) dups.push(e.version); seen.add(e.version); }
+dups.length ? fail(`duplicate versions: ${dups.join(', ')}`) : ok('no duplicate versions');
+
+const outOfOrder = [];
+for (let i = 1; i < entries.length; i++) {
+  if (cmp(entries[i - 1].version, entries[i].version) < 0) outOfOrder.push(`${entries[i - 1].version} above ${entries[i].version}`);
+  else if (entries[i - 1].dated && entries[i].dated && entries[i - 1].date < entries[i].date) outOfOrder.push(`${entries[i - 1].version} dated before ${entries[i].version}`);
+}
+outOfOrder.length ? warn(`not newest-first (the site still sorts correctly, but check dates): ${outOfOrder.slice(0, 5).join('; ')}`) : ok('newest-first order, dates consistent');
+
+const ambiguous = entries.filter((e) => /^(\d{1,2})[-/.](\d{1,2})[-/.]\d{4}$/.test(e.date_raw) && e.date_raw.split(/[-/.]/).slice(0, 2).every((n) => +n <= 12));
+if (ambiguous.length && !process.env.CHANGELOG_DATE_ORDER) {
+  console.log(`  i ${ambiguous.length} dates like ${ambiguous[0].date_raw} read as day/month (default). US style? set CHANGELOG_DATE_ORDER=mdy`);
+}
+
+console.log('Release');
+const stable = (src.match(/^\s*Stable tag:\s*(\S+)/im) || [])[1];
+if (stable) stable === top.version ? ok(`Stable tag ${stable} = top entry`) : warn(`Stable tag ${stable} ≠ top entry ${top.version}`);
+const tag = (process.env.TAG || '').replace(/^v/i, '');
+if (tag) {
+  const e = entries.find((x) => x.version === tag);
+  e ? ok(`tag ${process.env.TAG} → entry ${e.version} (${e.items.length} items)`) : fail(`tag ${process.env.TAG}: version ${tag} not in the changelog — add it before tagging`);
+} else {
+  console.log(`  i release tag should be v${top.version} or ${top.version}`);
+}
+report();
+
+function report() {
+  console.log(`\n${errors ? 'NOT READY' : 'READY'} — ${errors} error(s), ${warns} warning(s)`);
+  process.exit(errors ? 1 : 0);
+}
+JS

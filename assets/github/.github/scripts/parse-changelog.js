@@ -117,6 +117,22 @@ function parseReadme(src) {
   });
 }
 
+/**
+ * Find the readme regardless of letter case (Pro repos often ship README.txt,
+ * and Linux runners are case-sensitive). Returns the real path or null.
+ */
+function resolveReadme(wanted) {
+  const path = require('path');
+  const dir = path.dirname(wanted);
+  const base = path.basename(wanted);
+  let names;
+  try { names = fs.readdirSync(dir); } catch { return null; }
+  // Directory listing gives the real name even on case-insensitive disks (macOS).
+  if (names.includes(base)) return wanted;
+  const hit = names.find((n) => n.toLowerCase() === base.toLowerCase());
+  return hit ? path.join(dir, hit) : null;
+}
+
 function readEvent() {
   const p = process.env.GITHUB_EVENT_PATH;
   if (!p || !fs.existsSync(p)) return {};
@@ -137,7 +153,13 @@ function main() {
     status: (process.env.CHANGELOG_STATUS || 'publish').toLowerCase() === 'draft' ? 'draft' : 'publish',
   };
 
-  const entries = fs.existsSync(opt.readme) ? parseReadme(fs.readFileSync(opt.readme, 'utf8')) : [];
+  const readmePath = resolveReadme(opt.readme);
+  if (!readmePath) {
+    console.error(`::warning::${opt.readme} not found (any letter case) — set the CHANGELOG_README variable if it lives elsewhere`);
+  } else if (readmePath !== opt.readme) {
+    opt.readme = readmePath;
+  }
+  const entries = readmePath ? parseReadme(fs.readFileSync(readmePath, 'utf8')) : [];
   const releaseDate = release && release.published_at ? release.published_at.slice(0, 10) : null;
   const today = new Date().toISOString().slice(0, 10);
 
@@ -187,4 +209,4 @@ if (require.main === module) {
   try { main(); } catch (err) { console.error(`::error::${err.message}`); process.exit(1); }
 }
 
-module.exports = { parseReadme, parseDate, parseItems };
+module.exports = { parseReadme, parseDate, parseItems, resolveReadme };

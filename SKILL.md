@@ -69,6 +69,8 @@ product writes US dates.
    or wp-admin → Changelog → Settings → Save (blank = generate; shown once).
 3. Create the page: `[changelog]` (all products) or
    `[changelog product="notificationx" per_page="10"]`. Multiple: `product="notificationx,notificationx-pro"`.
+   Gutenberg: Shortcode block · Classic: paste · Elementor: **Shortcode** widget (stays fresh even with
+   Element Caching on — leave the widget's Advanced → Cache Settings at default) · PHP: `do_shortcode()`.
 4. WAF / security plugin / Cloudflare: allow `POST /wp-json/changelog-sync/v1/entry`
    (GitHub runner IPs are not fixed — allow by path, the HMAC is the auth).
 5. `scripts/verify-endpoint.sh https://site.com <secret-file>` → must print `401` then `422`.

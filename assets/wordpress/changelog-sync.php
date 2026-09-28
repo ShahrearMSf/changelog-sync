@@ -2,8 +2,10 @@
 /**
  * Plugin Name: Changelog Sync
  * Description: Receives signed changelog entries from GitHub Actions and lists them newest-first with the [changelog] shortcode.
- * Version:     1.0.0
+ * Version:     1.0.1
  * Requires PHP: 7.4
+ * License:     GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
  * Secret: define( 'CHANGELOG_SYNC_SECRET', '...' ) in wp-config.php
  *         (or the `changelog_sync_secret` option). Endpoint is disabled while empty.
@@ -55,6 +57,7 @@ final class Changelog_Sync {
 			delete_transient( 'changelog_sync_show_secret_' . get_current_user_id() );
 			echo '<p>New secret (shown once):</p><p><input type="text" readonly class="large-text code" id="cl-new-secret" value="' . esc_attr( $fresh ) . '" onclick="this.select()"></p>';
 		}
+		echo '<div class="notice notice-info inline"><p><strong>Recommended:</strong> put the secret in <code>wp-config.php</code> instead: <code>define( \'CHANGELOG_SYNC_SECRET\', \'…\' );</code>. A secret saved here is stored in the database, so anyone with database or backup access can read it.</p></div>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'changelog_sync_secret' );
 		echo '<input type="hidden" name="action" value="changelog_sync_secret">';

@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.3 - 2026-09-29
+- Security: `verify-endpoint.sh` asks for the secret with hidden input (or reads a file / `CHANGELOG_SECRET`), signs in Node from the environment so the secret is never on a command line visible in `ps`, and uses a private `mktemp` file, not a predictable `/tmp` name. Docs no longer suggest writing the secret to a file or typing it into a command
+
 ## 1.3.2 - 2026-09-29
 - Docs: new README section "The endpoint and the secret": what the two secrets are, where to get them (Changelog → Settings or `wp-config.php`), where to add them in GitHub (repo and organization), how to verify them, and how to rotate
 

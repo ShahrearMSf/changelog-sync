@@ -30,5 +30,5 @@
 scripts/preflight.sh /path/to/product-repo v3.3.1     # catches most problems before a release
 gh run list -R OWNER/REPO --workflow publish-changelog.yml --limit 5
 gh run view <id> -R OWNER/REPO --log | grep -E "✓|::warning|::error|error\]"
-scripts/verify-endpoint.sh https://site.com /path/to/secret-file
+scripts/verify-endpoint.sh https://site.com          # asks for the secret, typing hidden
 ```

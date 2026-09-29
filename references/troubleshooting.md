@@ -16,6 +16,8 @@
 | `skipped_locked` | Someone ticked "Keep my edits" | Untick in the entry's Release box, re-run |
 | `skipped_trashed` | Entry is in trash | Restore it (or empty trash) and re-run |
 | Entry created but not on page | Status draft, wrong `product` slug in shortcode, or page cache | Check Changelog list; slug matches `CHANGELOG_PRODUCT`; purge host/CDN cache |
+| Every version shows the same (today's) date | Readme headers have no dates and there are no GitHub Releases for them | Fine for new releases (release date is used). For old versions set `CHANGELOG_EXTRA_DATES`, then re-run the backfill |
+| Items have no Added/Fixed label | Prefix not recognised | Use `Type: text` or `Type - text` with a known type (see behaviour.md) |
 | Wrong order | Wrong date in readme (dmy vs mdy) | Fix readme or set `CHANGELOG_DATE_ORDER`, re-run for that version |
 | Duplicate-looking entries | Same version under two product slugs (e.g. repo renamed, default slug = repo name) | Set `CHANGELOG_PRODUCT` explicitly; trash the stray one |
 | Manual "Run workflow" button missing | Workflow file not on the default branch | Merge to default branch |

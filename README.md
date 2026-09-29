@@ -75,7 +75,7 @@ Then ask Claude Code something like "set up changelog sync for our plugin", or r
 **2. Each product repo**
 1. Copy `assets/github/.github/` into the repo's default branch, then run `scripts/preflight.sh <repo-dir>`. It must say `READY`.
 2. Add the secrets `CHANGELOG_ENDPOINT` (shown in Changelog → Settings) and `CHANGELOG_SECRET`.
-3. Add the variables `CHANGELOG_PRODUCT` (slug) and `CHANGELOG_PRODUCT_NAME` (label). Optional: `CHANGELOG_README` (only when the readme isn't at the repo root; `readme.txt` and `README.txt` are both found automatically), `CHANGELOG_STATUS` (`publish`|`draft`), `CHANGELOG_DATE_ORDER` (`dmy`|`mdy`).
+3. Add the variables `CHANGELOG_PRODUCT` (slug) and `CHANGELOG_PRODUCT_NAME` (label). Optional: `CHANGELOG_EXTRA_DATES` (JSON dates for undated versions that never had a GitHub Release, e.g. `{"1.0.0":"2026-07-30"}`), `CHANGELOG_README` (only when the readme isn't at the repo root; `readme.txt` and `README.txt` are both found automatically), `CHANGELOG_STATUS` (`publish`|`draft`), `CHANGELOG_DATE_ORDER` (`dmy`|`mdy`).
 4. Go to Actions → **Publish changelog** → Run workflow, and tick **all** to load old versions.
 
 **3. Every release after that:** update `readme.txt` as usual and publish the GitHub Release. The entry is live within about a minute.
@@ -120,13 +120,13 @@ any page that contains the shortcode shows them, updating by itself on every rel
 = 3.3.1 - 14/09/2026 =
 - Added: Something new
 * Fixed: Bullets can be -, *, • or none
-Improved: `code` becomes <code>
+Improvement - `code` becomes <code>   (Type: or Type - both work)
 
 = 3.3.0 - September 3, 2026 =
 ...
 ```
 
-Supported date formats are `dd/mm/yyyy` (the default), `mm/dd/yyyy`, `yyyy-mm-dd` and `14 September 2026` / `September 14, 2026`. See `references/behaviour.md` for the full rules.
+Dates in the header are optional. `= 3.3.1 =` works, and the Action then uses the GitHub Release date for that version. Supported date formats are `dd/mm/yyyy` (the default), `mm/dd/yyyy`, `yyyy-mm-dd` and `14 September 2026` / `September 14, 2026`. See `references/behaviour.md` for the full rules.
 
 ## Tested
 

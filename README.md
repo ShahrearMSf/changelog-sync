@@ -49,7 +49,7 @@ references/
   troubleshooting.md             symptom → cause → fix
 scripts/
   package-plugin.sh              build changelog-sync.zip for wp-admin upload
-  verify-endpoint.sh             check site + secret without creating content (401 then 422 = OK)
+  verify-endpoint.sh             check site + secret without creating content (asks for the secret, hidden)
   preview-entry.sh               show what a release would send (no network)
   preflight.sh                   check a product repo before its first release (READY / NOT READY)
 ```
@@ -95,10 +95,9 @@ The GitHub Action needs two repository secrets to deliver entries to your site:
 3. **Add both to GitHub:** in the product repo go to **Settings → Secrets and variables → Actions → New repository secret**, and add `CHANGELOG_ENDPOINT` and `CHANGELOG_SECRET` with the values above. For several repos, add them once as **organization secrets** (Organization → Settings → Secrets and variables → Actions) and give the chosen repos access.
 4. **Check that they match.** This publishes nothing:
    ```bash
-   printf '%s' 'PASTE-THE-SECRET' > /tmp/secret.txt
-   scripts/verify-endpoint.sh https://example.com /tmp/secret.txt
-   rm /tmp/secret.txt
+   scripts/verify-endpoint.sh https://example.com
    ```
+   It asks you to paste the secret with typing hidden, so the secret never lands in your shell history, in a file or in the process list.
    `OK` means the site is reachable and the secret matches. Otherwise it names the problem: secret mismatch, blocked by a firewall, plugin inactive, or no secret set.
 
 To change the secret later, generate a new one the same way and update `CHANGELOG_SECRET` in GitHub. The old one stops working immediately.
@@ -110,7 +109,7 @@ To change the secret later, generate a new one the same way and update `CHANGELO
 2. Set the secret: see [The endpoint and the secret](#the-endpoint-and-the-secret).
 3. Add `[changelog]` or `[changelog product="my-plugin" per_page="10"]` to a page.
 4. If a firewall or security plugin sits in front, allow `POST /wp-json/changelog-sync/v1/entry`.
-5. `scripts/verify-endpoint.sh https://example.com secret.txt` should report `OK`.
+5. `scripts/verify-endpoint.sh https://example.com` (paste the secret when asked) should report `OK`.
 
 **2. Each product repo**
 1. Copy `assets/github/.github/scripts/` and **one** workflow into the repo's default branch:

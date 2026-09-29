@@ -74,7 +74,9 @@ product writes US dates.
    Element Caching on — leave the widget's Advanced → Cache Settings at default) · PHP: `do_shortcode()`.
 4. WAF / security plugin / Cloudflare: allow `POST /wp-json/changelog-sync/v1/entry`
    (GitHub runner IPs are not fixed — allow by path, the HMAC is the auth).
-5. `scripts/verify-endpoint.sh https://site.com <secret-file>` → must print `401` then `422`.
+5. `scripts/verify-endpoint.sh https://site.com` → prompts for the secret (hidden) → must print `401` then
+   `422` and `OK`. Automation: pass a `umask 077` file as 2nd arg or `CHANGELOG_SECRET` in env. Never put
+   the secret on a command line (`ps`-visible) or in shell history.
 
 ### 4. Each product repo (with permission)
 1. Copy `assets/github/.github/scripts/` + **one** workflow into the repo (default branch):

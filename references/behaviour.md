@@ -1,7 +1,9 @@
 # Behaviour + payload reference
 
 ## Source & trigger
-- Trigger: `release: published` (pre-releases skipped) + `workflow_dispatch` (inputs: `version`, `status` default/publish/draft, `all` backfill).
+- Triggers, `publish-changelog.yml`: `release: published` (pre-releases skipped) + `workflow_dispatch` (inputs: `version`, `status` default/publish/draft, `all` backfill).
+- Triggers, `publish-changelog-after-deploy.yml`: `workflow_run` of the named deploy workflow, only when that run was started by a release **and** succeeded. It then looks up the release by tag, checks out the exact deployed commit and skips pre-releases. Same manual `workflow_dispatch`. A failed or cancelled deploy shows the changelog run as *skipped*, with nothing sent.
+- Concurrency: one queue **per version**, so releases that finish together never cancel each other.
 - Source: `readme.txt` `== Changelog ==` section, stops at the next `== … ==` heading.
 - File lookup: `CHANGELOG_README` (default `readme.txt`) matched in any letter case, so `README.txt` / `Readme.txt` work on the case-sensitive Linux runner.
 - Version chosen: dispatch input → release tag (`v` stripped) → top entry.

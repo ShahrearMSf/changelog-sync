@@ -14,7 +14,8 @@ remote WP host, release/backfill/pre-release-skip/re-send/draft/lock/trash/XSS).
 change behaviour in `assets/` first, then re-test.
 
 ```
-assets/github/.github/workflows/publish-changelog.yml   → product repo
+assets/github/.github/workflows/publish-changelog.yml                → product repo (no deploy workflow)
+assets/github/.github/workflows/publish-changelog-after-deploy.yml   → product repo WITH a deploy workflow
 assets/github/.github/scripts/parse-changelog.js        → product repo
 assets/github/.github/scripts/send-changelog.js         → product repo
 assets/wordpress/changelog-sync.php                     → website (plugin or mu-plugin)
@@ -76,7 +77,12 @@ product writes US dates.
 5. `scripts/verify-endpoint.sh https://site.com <secret-file>` → must print `401` then `422`.
 
 ### 4. Each product repo (with permission)
-1. Copy `assets/github/.github/**` into the repo (default branch, so manual runs appear).
+1. Copy `assets/github/.github/scripts/` + **one** workflow into the repo (default branch):
+   - Repo has a deploy workflow (WordPress.org etc.) → `publish-changelog-after-deploy.yml`: runs only
+     after the deploy **succeeds**; failed deploy = changelog skipped. Its `workflows: ["…"]` must equal the
+     deploy workflow's `name:` (no variables allowed there); workflow_run fires from the default branch only.
+   - No deploy workflow → `publish-changelog.yml` (runs on release published).
+   Never install both (preflight fails).
 2. Secrets: `CHANGELOG_ENDPOINT` (from Changelog → Settings), `CHANGELOG_SECRET`.
    Many repos → one **org-level** secret pair scoped to those repos.
 3. Variables: `CHANGELOG_PRODUCT` (slug — Free and Pro need different slugs),

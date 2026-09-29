@@ -20,6 +20,9 @@
 | Items have no Added/Fixed label | Prefix not recognised | Use `Type: text` or `Type - text` with a known type (see behaviour.md) |
 | Wrong order | Wrong date in readme (dmy vs mdy) | Fix readme or set `CHANGELOG_DATE_ORDER`, re-run for that version |
 | Duplicate-looking entries | Same version under two product slugs (e.g. repo renamed, default slug = repo name) | Set `CHANGELOG_PRODUCT` explicitly; trash the stray one |
+| After-deploy: changelog run shows **skipped** | The deploy failed or was cancelled (intended), or the deploy was not started by a release | Fix and re-run the deploy, then Actions → Publish changelog → Run workflow with that `version` |
+| After-deploy: changelog never starts | `workflows: ["…"]` ≠ the deploy workflow's `name:`, or the file is not on the default branch | Run `scripts/preflight.sh` (it names the mismatch); merge to the default branch |
+| Changelog run **cancelled** while queued | Templates before 1.3.0 used one queue per repo, so a burst of releases dropped runs | Update to 1.3.0 (a queue per version); re-send the lost version via Run workflow |
 | Manual "Run workflow" button missing | Workflow file not on the default branch | Merge to default branch |
 
 ## Quick diagnostics

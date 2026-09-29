@@ -1,4 +1,14 @@
-# Publishes the released version's changelog entry to the website.
+# Publishes the released version's changelog entry to the website — ONLY after the
+# deploy workflow (e.g. WordPress.org) has finished successfully for that release.
+# If the deploy fails or is cancelled, this workflow does not run (GitHub shows it as skipped).
+#
+# Use this file INSTEAD of publish-changelog.yml when the repo has a deploy workflow.
+# Install only one of the two.
+#
+# ⚠ `workflows:` below must equal the `name:` of your deploy workflow exactly
+#   (GitHub does not allow a variable there). Renaming the deploy workflow silently
+#   stops this one — scripts/preflight.sh checks the match.
+# ⚠ GitHub runs the copy of this file on the DEFAULT branch, so merge it there.
 #
 # Repo settings → Secrets and variables → Actions
 #   Secrets:   CHANGELOG_ENDPOINT   https://<site>/wp-json/changelog-sync/v1/entry
@@ -15,8 +25,9 @@
 name: Publish changelog
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Deploy to WordPress.org"]   # ← must match your deploy workflow's name
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -35,7 +46,7 @@ on:
 # One queue PER VERSION: GitHub keeps only one pending run per group and cancels older
 # pending ones, so a per-repo group could silently drop a release that finished close to another.
 concurrency:
-  group: changelog-${{ github.repository }}-${{ github.event.release.tag_name || inputs.version || github.run_id }}
+  group: changelog-${{ github.repository }}-${{ github.event.workflow_run.head_branch || inputs.version || github.run_id }}
   cancel-in-progress: false
 
 permissions:
@@ -43,19 +54,44 @@ permissions:
 
 jobs:
   publish:
-    # Pre-releases (RC/beta) never reach the public changelog.
-    if: github.event_name == 'workflow_dispatch' || !github.event.release.prerelease
+    # Runs only when the deploy was started by a release AND succeeded (or on a manual run).
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.event == 'release' &&
+       github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0 — on release: checks out the release tag
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # The exact commit the deploy shipped (manual runs: the selected branch).
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
 
+      - name: Find the release
+        id: release
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          ENC=$(jq -rn --arg t "$TAG" '$t | @uri')
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$ENC" > "$RUNNER_TEMP/release.json"
+          jq '{release: .}' "$RUNNER_TEMP/release.json" > "$RUNNER_TEMP/event.json"
+          echo "Release: $(jq -r '.tag_name + " published " + .published_at + " prerelease=" + (.prerelease|tostring)' "$RUNNER_TEMP/release.json")"
+          if [ "$(jq -r '.prerelease' "$RUNNER_TEMP/release.json")" = "true" ]; then
+            echo "::notice::$TAG is a pre-release — not published to the changelog"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "event=$RUNNER_TEMP/event.json" >> "$GITHUB_OUTPUT"
+
       - name: Collect release dates
         # Only used for readme versions whose header has no date.
+        if: steps.release.outputs.skip != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -65,7 +101,9 @@ jobs:
           echo "Release dates: $(cat "$RUNNER_TEMP/release-dates.json")"
 
       - name: Extract changelog entry
+        if: steps.release.outputs.skip != 'true'
         env:
+          CHANGELOG_EVENT_PATH: ${{ steps.release.outputs.event }}
           CHANGELOG_PRODUCT: ${{ vars.CHANGELOG_PRODUCT }}
           CHANGELOG_PRODUCT_NAME: ${{ vars.CHANGELOG_PRODUCT_NAME }}
           CHANGELOG_README: ${{ vars.CHANGELOG_README || 'readme.txt' }}
@@ -85,6 +123,7 @@ jobs:
           { echo '```json'; cat entry.json; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Send to website
+        if: steps.release.outputs.skip != 'true'
         env:
           CHANGELOG_ENDPOINT: ${{ secrets.CHANGELOG_ENDPOINT }}
           CHANGELOG_SECRET: ${{ secrets.CHANGELOG_SECRET }}

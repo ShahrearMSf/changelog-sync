@@ -26,8 +26,30 @@ const cmp = (a, b) => {
 };
 
 console.log('Workflow files');
-for (const f of ['.github/workflows/publish-changelog.yml', '.github/scripts/parse-changelog.js', '.github/scripts/send-changelog.js']) {
+for (const f of ['.github/scripts/parse-changelog.js', '.github/scripts/send-changelog.js']) {
   fs.existsSync(f) ? ok(f) : warn(`${f} missing (copy from assets/github/)`);
+}
+const WF = '.github/workflows';
+const wfFiles = (() => { try { return fs.readdirSync(WF).filter((n) => /\.ya?ml$/.test(n)); } catch { return []; } })();
+const wfText = (n) => fs.readFileSync(`${WF}/${n}`, 'utf8');
+const wfName = (txt) => { const m = txt.match(/^name:\s*(.+?)\s*$/m); return m ? m[1].replace(/^['"]|['"]$/g, '') : null; };
+const plain = wfFiles.includes('publish-changelog.yml');
+const after = wfFiles.includes('publish-changelog-after-deploy.yml');
+const deploys = wfFiles.filter((n) => !/^publish-changelog/.test(n) && /action-wordpress-plugin-deploy|svn|deploy/i.test(wfText(n)) && /^\s*release:/m.test(wfText(n)));
+if (plain && after) fail('both publish-changelog.yml and publish-changelog-after-deploy.yml are installed — keep only one (entries would be sent twice)');
+else if (!plain && !after) warn('no changelog workflow installed (copy one from assets/github/.github/workflows/)');
+if (after) {
+  const m = wfText('publish-changelog-after-deploy.yml').match(/workflows:\s*\[\s*["']([^"']+)["']/);
+  const want = m ? m[1] : null;
+  const hit = wfFiles.find((n) => n !== 'publish-changelog-after-deploy.yml' && wfName(wfText(n)) === want);
+  if (!want) fail('publish-changelog-after-deploy.yml: could not read workflows: ["…"]');
+  else if (!hit) fail(`after-deploy waits for a workflow named "${want}", but none exists (names: ${wfFiles.map((n) => wfName(wfText(n))).filter(Boolean).join(', ') || 'none'})`);
+  else if (!/^\s*release:/m.test(wfText(hit))) warn(`"${want}" (${hit}) is not triggered by release — the changelog only runs after release-triggered deploys`);
+  else ok(`publish-changelog-after-deploy.yml → runs after "${want}" (${hit}) succeeds`);
+  console.log('  i it must be on the default branch to trigger (GitHub runs workflow_run from there)');
+} else if (plain) {
+  ok('publish-changelog.yml (runs on release published)');
+  if (deploys.length) console.log(`  i deploy workflow found (${deploys.join(', ')}): consider publish-changelog-after-deploy.yml so the changelog only publishes after a successful deploy`);
 }
 
 console.log('Readme');

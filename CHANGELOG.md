@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 - 2026-09-29
+- Added: `publish-changelog-after-deploy.yml` template: the changelog runs only after the deploy workflow (e.g. WordPress.org) succeeds; a failed deploy skips it
+- Fixed: a burst of releases could cancel a queued changelog run and lose an entry; concurrency is now one queue per version (both templates)
+- Added: `CHANGELOG_EVENT_PATH` so the parser can read the release when triggered by workflow_run
+- Improved: preflight checks the template choice (only one installed), that the after-deploy target workflow exists, and suggests after-deploy when a deploy workflow is present
+
 ## 1.2.0 - 2026-09-29
 - Added: readme headers without a date (`= 1.3.0 =`) get the date of that version's GitHub Release; the workflow collects release dates automatically
 - Added: `CHANGELOG_EXTRA_DATES` variable for undated versions that never had a GitHub Release

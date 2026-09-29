@@ -56,13 +56,13 @@ scripts/
 
 ## Install the skill
 
-**From the zip** (`changelog-sync-skill-<version>.zip`). It contains one folder, `changelog-sync/`:
+**From the zip** (`changelog-sync-skill.zip`). It contains one folder, `changelog-sync/`:
 
 ```bash
 # for you, in every project
-unzip changelog-sync-skill-*.zip -d ~/.claude/skills/
+unzip changelog-sync-skill.zip -d ~/.claude/skills/
 # or for one project only
-unzip changelog-sync-skill-*.zip -d <project>/.claude/skills/
+unzip changelog-sync-skill.zip -d <project>/.claude/skills/
 ```
 
 The result must be `~/.claude/skills/changelog-sync/SKILL.md`, not `…/changelog-sync/changelog-sync/SKILL.md`. Restart Claude Code if it's already open.

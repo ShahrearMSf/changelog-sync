@@ -7,7 +7,7 @@
  *
  * Version selection (single-entry mode):
  *   1. --version flag (manual workflow run)
- *   2. the release tag from GITHUB_EVENT_PATH (v3.3.1 -> 3.3.1)
+ *   2. the release tag from CHANGELOG_EVENT_PATH or GITHUB_EVENT_PATH (v3.3.1 -> 3.3.1)
  *   3. the top entry of the changelog
  * If the requested version is missing from readme.txt, the GitHub Release
  * body is used as a fallback source. Otherwise the script fails loudly.
@@ -163,7 +163,8 @@ function knownDates() {
 }
 
 function readEvent() {
-  const p = process.env.GITHUB_EVENT_PATH;
+  // CHANGELOG_EVENT_PATH: a release event rebuilt by the after-deploy workflow (GITHUB_* can't be overridden).
+  const p = process.env.CHANGELOG_EVENT_PATH || process.env.GITHUB_EVENT_PATH;
   if (!p || !fs.existsSync(p)) return {};
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return {}; }
 }

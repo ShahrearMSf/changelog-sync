@@ -8,6 +8,10 @@
 #              CHANGELOG_README         path, e.g. readme.txt          (default: readme.txt)
 #              CHANGELOG_STATUS         publish | draft                (default: publish)
 #              CHANGELOG_DATE_ORDER     dmy | mdy for 01/02/2026 dates (default: dmy)
+#              CHANGELOG_EXTRA_DATES    JSON dates for versions with no date in readme.txt AND
+#                                       no GitHub Release, e.g. {"1.0.0":"2026-07-30"}
+#
+# Readme headers without a date ("= 1.3.0 =") get the date of their GitHub Release.
 name: Publish changelog
 
 on:
@@ -48,12 +52,24 @@ jobs:
         with:
           node-version: 20
 
+      - name: Collect release dates
+        # Only used for readme versions whose header has no date.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list -R "$GITHUB_REPOSITORY" --limit 1000 --json tagName,publishedAt,isPrerelease,isDraft \
+            --jq '[.[] | select(.isDraft | not) | select(.isPrerelease | not) | {key: (.tagName | ltrimstr("v")), value: .publishedAt[0:10]}] | from_entries' \
+            > "$RUNNER_TEMP/release-dates.json" || echo '{}' > "$RUNNER_TEMP/release-dates.json"
+          echo "Release dates: $(cat "$RUNNER_TEMP/release-dates.json")"
+
       - name: Extract changelog entry
         env:
           CHANGELOG_PRODUCT: ${{ vars.CHANGELOG_PRODUCT }}
           CHANGELOG_PRODUCT_NAME: ${{ vars.CHANGELOG_PRODUCT_NAME }}
           CHANGELOG_README: ${{ vars.CHANGELOG_README || 'readme.txt' }}
           CHANGELOG_DATE_ORDER: ${{ vars.CHANGELOG_DATE_ORDER || 'dmy' }}
+          CHANGELOG_RELEASE_DATES_FILE: ${{ runner.temp }}/release-dates.json
+          CHANGELOG_EXTRA_DATES: ${{ vars.CHANGELOG_EXTRA_DATES }}
           CHANGELOG_STATUS: ${{ (inputs.status && inputs.status != 'default') && inputs.status || vars.CHANGELOG_STATUS || 'publish' }}
           INPUT_VERSION: ${{ inputs.version }}
           INPUT_ALL: ${{ inputs.all }}

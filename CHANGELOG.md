@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 - 2026-09-29
+- Added: readme headers without a date (`= 1.3.0 =`) get the date of that version's GitHub Release; the workflow collects release dates automatically
+- Added: `CHANGELOG_EXTRA_DATES` variable for undated versions that never had a GitHub Release
+- Fixed: `Fixed - text` / `Improvement - text` (dash separator) now gets its label, like `Fixed: text`
+- Improved: preflight treats undated readmes as normal and explains where dates come from
+
 ## 1.1.1 - 2026-09-28
 - Docs: README "Adding the changelog to a page" covers shortcode options, where to place it in Gutenberg, Classic, Elementor, other builders and PHP templates, Elementor caching, styling classes and manual edits
 

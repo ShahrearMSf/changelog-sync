@@ -82,7 +82,9 @@ product writes US dates.
 3. Variables: `CHANGELOG_PRODUCT` (slug — Free and Pro need different slugs),
    `CHANGELOG_PRODUCT_NAME`; optional `CHANGELOG_README` (only if the readme is not at the repo root — letter case
    `readme.txt` / `README.txt` is matched automatically),
-   `CHANGELOG_STATUS=draft`, `CHANGELOG_DATE_ORDER=mdy`.
+   `CHANGELOG_STATUS=draft`, `CHANGELOG_DATE_ORDER=mdy`, `CHANGELOG_EXTRA_DATES` (JSON, for
+   undated readme versions that never had a GitHub Release — e.g. the 1.0.0 that went straight to WP.org;
+   WP.org's `added` date from `api.wordpress.org/plugins/info/1.2/?action=plugin_information&request[slug]=<slug>`).
 4. Backfill: Actions → Publish changelog → Run workflow → tick **all**. Safe to repeat.
 
 ### 5. Go-live verification

@@ -9,10 +9,10 @@
 
 ## Parser accepts
 - Headers: `= 3.3.1 - 14/09/2026 =`, `= v2.0.0 – September 5, 2026 =`, `= 1.9.9 =` (dash/en-dash/em-dash/pipe/colon).
+- Date priority: date in the header → the version's GitHub Release date (collected by the workflow) → `CHANGELOG_EXTRA_DATES` → the newer entry's date. A single release run with no dates at all uses that release's publish date. So readmes that never write dates (`= 1.3.0 =`) still get real dates.
 - Dates: `dd/mm/yyyy` (default), `mm/dd/yyyy` (`CHANGELOG_DATE_ORDER=mdy`, auto when unambiguous), `yyyy-mm-dd`, `14 September 2026`, `September 14, 2026`, dots/dashes as separators.
 - Items: `*`, `-`, `•`, `+` bullets or plain lines; indented lines continue the previous item; `` `code` `` → `<code>`.
-- Types (prefix `Type:`): Added/New, Fixed, Improved/Improvement, Updated/Update, Changed, Removed, Deprecated, Security, Tweak, Revamped, Compatibility, Dev. Anything else → untyped item.
-- Undated entry: borrows the date of the newer entry above it (single release run: uses the release's publish date).
+- Types (prefix `Type:` or `Type - `, dash needs spaces so `Fixed-width` stays text): Added/New, Fixed, Improved/Improvement, Updated/Update, Changed, Removed, Deprecated, Security, Tweak, Revamped, Compatibility, Dev. Anything else → untyped item.
 
 ## Payload (POST /wp-json/changelog-sync/v1/entry)
 ```json

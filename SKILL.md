@@ -83,7 +83,11 @@ product writes US dates.
      deploy workflow's `name:` (no variables allowed there); workflow_run fires from the default branch only.
    - No deploy workflow → `publish-changelog.yml` (runs on release published).
    Never install both (preflight fails).
-2. Secrets: `CHANGELOG_ENDPOINT` (from Changelog → Settings), `CHANGELOG_SECRET`.
+2. Secrets (repo → Settings → Secrets and variables → Actions → New repository secret):
+   `CHANGELOG_ENDPOINT` = the "Endpoint" shown on the site's Changelog → Settings;
+   `CHANGELOG_SECRET` = the value in `wp-config.php` (`CHANGELOG_SYNC_SECRET`) or the one Settings
+   generated (shown once). Explain both in plain words to the user; README → "The endpoint and the
+   secret" has the full walkthrough. Never echo the secret; pipe it: `gh secret set CHANGELOG_SECRET < file`.
    Many repos → one **org-level** secret pair scoped to those repos.
 3. Variables: `CHANGELOG_PRODUCT` (slug — Free and Pro need different slugs),
    `CHANGELOG_PRODUCT_NAME`; optional `CHANGELOG_README` (only if the readme is not at the repo root — letter case

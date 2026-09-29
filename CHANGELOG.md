@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.3.2 - 2026-09-29
+- Docs: new README section "The endpoint and the secret": what the two secrets are, where to get them (Changelog → Settings or `wp-config.php`), where to add them in GitHub (repo and organization), how to verify them, and how to rotate
+
 ## 1.3.1 - 2026-09-29
 - Fixed: `preview-entry.sh` treated `--all` / `--version` as the product name when the name was omitted
 - Docs: install from the shareable zip, expected folder layout, and requirements

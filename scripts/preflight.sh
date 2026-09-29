@@ -46,13 +46,15 @@ if (!entries.length) report();
 
 console.log('Entries');
 const top = entries[0];
-top.dated ? ok(`top entry ${top.version} dated ${top.date}`) : warn(`top entry ${top.version} has no parsable date ("${top.date_raw}") — release date will be used`);
+if (top.dated) ok(`top entry ${top.version} dated ${top.date}`);
+else if (top.date_raw) warn(`top entry ${top.version} has an unparsable date ("${top.date_raw}") — the release date will be used`);
+else ok(`top entry ${top.version} (no date in readme — the release date will be used)`);
 top.items.length ? ok(`top entry has ${top.items.length} items`) : fail(`top entry ${top.version} has no items`);
 
 const bad = entries.filter((e) => e.date_raw && !e.dated);
 bad.length ? warn(`unparsable dates: ${bad.map((e) => `${e.version} "${e.date_raw}"`).join(', ')}`) : ok('all dates parse');
 const undated = entries.filter((e) => !e.date_raw);
-if (undated.length) warn(`no date on: ${undated.map((e) => e.version).join(', ')} (they borrow the newer entry's date)`);
+if (undated.length) console.log(`  i no date in readme on: ${undated.map((e) => e.version).join(', ')} — the Action uses each version's GitHub Release date; for versions that never had a release set CHANGELOG_EXTRA_DATES, e.g. {"${undated[undated.length - 1].version}":"YYYY-MM-DD"}`);
 const empty = entries.filter((e) => !e.items.length);
 if (empty.length) warn(`no items on: ${empty.map((e) => e.version).join(', ')} (skipped by the site)`);
 

@@ -77,11 +77,37 @@ git clone https://github.com/ShahrearMSf/changelog-sync ~/.claude/skills/changel
 
 Then ask Claude Code something like "set up changelog sync for our plugin", or run `/changelog-sync`.
 
+## The endpoint and the secret
+
+The GitHub Action needs two repository secrets to deliver entries to your site:
+
+| Secret | What it is | Example |
+|---|---|---|
+| `CHANGELOG_ENDPOINT` | The website address the Action sends each changelog entry to | `https://example.com/wp-json/changelog-sync/v1/entry` |
+| `CHANGELOG_SECRET` | A shared password. The Action signs every entry with it and the site rejects anything unsigned or wrongly signed | 64 random characters |
+
+**Where they come from:** the receiver plugin in `assets/wordpress/`, installed on the website. After you activate it, a **Changelog** menu appears in wp-admin.
+
+1. **Endpoint:** go to **Changelog → Settings** and copy the address shown under "Endpoint".
+2. **Secret**, either way:
+   - **Recommended:** run `openssl rand -hex 32` and put the result in the site's `wp-config.php` as `define( 'CHANGELOG_SYNC_SECRET', '…' );`. That value is your `CHANGELOG_SECRET`, and the Settings page will then show "Configured (wp-config.php)".
+   - **No file access:** on **Changelog → Settings**, leave the secret field blank and click **Save secret**. A new secret is generated and **shown only once**, so copy it right away. (It is stored in the database, which is why `wp-config.php` is preferred.)
+3. **Add both to GitHub:** in the product repo go to **Settings → Secrets and variables → Actions → New repository secret**, and add `CHANGELOG_ENDPOINT` and `CHANGELOG_SECRET` with the values above. For several repos, add them once as **organization secrets** (Organization → Settings → Secrets and variables → Actions) and give the chosen repos access.
+4. **Check that they match.** This publishes nothing:
+   ```bash
+   printf '%s' 'PASTE-THE-SECRET' > /tmp/secret.txt
+   scripts/verify-endpoint.sh https://example.com /tmp/secret.txt
+   rm /tmp/secret.txt
+   ```
+   `OK` means the site is reachable and the secret matches. Otherwise it names the problem: secret mismatch, blocked by a firewall, plugin inactive, or no secret set.
+
+To change the secret later, generate a new one the same way and update `CHANGELOG_SECRET` in GitHub. The old one stops working immediately.
+
 ## Quick start (without Claude)
 
 **1. Website (once per site)**
 1. `scripts/package-plugin.sh`, then upload `changelog-sync.zip` under Plugins → Add New → Upload. You can also drop the PHP file into `mu-plugins/`.
-2. Set the secret. The preferred way is `define( 'CHANGELOG_SYNC_SECRET', '<openssl rand -hex 32>' );` in `wp-config.php`. The alternative is wp-admin → Changelog → Settings.
+2. Set the secret: see [The endpoint and the secret](#the-endpoint-and-the-secret).
 3. Add `[changelog]` or `[changelog product="my-plugin" per_page="10"]` to a page.
 4. If a firewall or security plugin sits in front, allow `POST /wp-json/changelog-sync/v1/entry`.
 5. `scripts/verify-endpoint.sh https://example.com secret.txt` should report `OK`.
@@ -92,7 +118,7 @@ Then ask Claude Code something like "set up changelog sync for our plugin", or r
    - No deploy workflow: use `publish-changelog.yml`, which runs as soon as the release is published.
 
    Then run `scripts/preflight.sh <repo-dir>`. It must say `READY`; it also checks the template choice and the deploy name.
-2. Add the secrets `CHANGELOG_ENDPOINT` (shown in Changelog → Settings) and `CHANGELOG_SECRET`.
+2. Add the secrets `CHANGELOG_ENDPOINT` and `CHANGELOG_SECRET` under the repo's Settings → Secrets and variables → Actions (see [The endpoint and the secret](#the-endpoint-and-the-secret)).
 3. Add the variables `CHANGELOG_PRODUCT` (slug) and `CHANGELOG_PRODUCT_NAME` (label). Optional: `CHANGELOG_EXTRA_DATES` (JSON dates for undated versions that never had a GitHub Release, e.g. `{"1.0.0":"2026-07-30"}`), `CHANGELOG_README` (only when the readme isn't at the repo root; `readme.txt` and `README.txt` are both found automatically), `CHANGELOG_STATUS` (`publish`|`draft`), `CHANGELOG_DATE_ORDER` (`dmy`|`mdy`).
 4. Go to Actions → **Publish changelog** → Run workflow, and tick **all** to load old versions.
 

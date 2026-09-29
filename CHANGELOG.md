@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1 - 2026-09-29
+- Fixed: `preview-entry.sh` treated `--all` / `--version` as the product name when the name was omitted
+- Docs: install from the shareable zip, expected folder layout, and requirements
+
 ## 1.3.0 - 2026-09-29
 - Added: `publish-changelog-after-deploy.yml` template: the changelog runs only after the deploy workflow (e.g. WordPress.org) succeeds; a failed deploy skips it
 - Fixed: a burst of releases could cancel a queued changelog run and lose an entry; concurrency is now one queue per version (both templates)

@@ -31,7 +31,7 @@
 2. Run `scripts/preflight.sh` on each product repo — all must say `READY`.
 3. Install plugin on production, set secret, run `scripts/verify-endpoint.sh` (expect 401 then 422).
 4. Create the page **as draft/private** first.
-5. Merge workflow into one product repo, set secrets/vars, run backfill with status `draft`.
+5. Pick the template (`publish-changelog-after-deploy.yml` if the repo deploys to WordPress.org, otherwise `publish-changelog.yml`), merge it into one product repo, set secrets/vars, run backfill with status `draft`.
 6. Review drafts in wp-admin (Changelog menu) → bulk-publish → publish the page.
 7. Roll out to the remaining repos; backfill each.
 8. Watch the next real release end-to-end.

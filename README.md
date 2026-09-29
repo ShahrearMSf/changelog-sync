@@ -24,6 +24,7 @@ WordPress: one "changelog_entry" post per version
 
 - **No extra writing.** It reads the same `readme.txt` changelog you already keep for WordPress.org. If a version is missing there, it falls back to the GitHub Release notes.
 - **Newest first, always.** Order comes from the release date plus the version number, so loading old versions later never breaks it.
+- **Publishes only after a successful deploy (optional).** With the after-deploy template, the changelog waits for your WordPress.org deploy workflow. If the deploy fails, the changelog never runs.
 - **Safe to re-run.** Sending the same version again reports `unchanged`, and edited text becomes `updated`. It never creates duplicates.
 - **Live or draft.** Choose per repo or per run. A re-sent draft never takes a live entry offline.
 - **Editors stay in control.** Tick "Keep my edits" and GitHub won't overwrite that entry. Trashed entries are never re-created.
@@ -37,7 +38,8 @@ WordPress: one "changelog_entry" post per version
 ```
 SKILL.md                         Claude Code skill: rules + step-by-step process
 assets/
-  github/.github/workflows/publish-changelog.yml   → copy into each product repo
+  github/.github/workflows/publish-changelog.yml                → product repo WITHOUT a deploy workflow
+  github/.github/workflows/publish-changelog-after-deploy.yml   → product repo WITH a deploy workflow (e.g. WordPress.org)
   github/.github/scripts/parse-changelog.js        → copy into each product repo
   github/.github/scripts/send-changelog.js         → copy into each product repo
   wordpress/changelog-sync.php                     → install on the website
@@ -73,7 +75,11 @@ Then ask Claude Code something like "set up changelog sync for our plugin", or r
 5. `scripts/verify-endpoint.sh https://example.com secret.txt` should report `OK`.
 
 **2. Each product repo**
-1. Copy `assets/github/.github/` into the repo's default branch, then run `scripts/preflight.sh <repo-dir>`. It must say `READY`.
+1. Copy `assets/github/.github/scripts/` and **one** workflow into the repo's default branch:
+   - The repo has a deploy workflow (e.g. "Deploy to WordPress.org"): use `publish-changelog-after-deploy.yml`. The changelog runs only after the deploy succeeds. Its `workflows: ["…"]` line must match the deploy workflow's `name:` exactly.
+   - No deploy workflow: use `publish-changelog.yml`, which runs as soon as the release is published.
+
+   Then run `scripts/preflight.sh <repo-dir>`. It must say `READY`; it also checks the template choice and the deploy name.
 2. Add the secrets `CHANGELOG_ENDPOINT` (shown in Changelog → Settings) and `CHANGELOG_SECRET`.
 3. Add the variables `CHANGELOG_PRODUCT` (slug) and `CHANGELOG_PRODUCT_NAME` (label). Optional: `CHANGELOG_EXTRA_DATES` (JSON dates for undated versions that never had a GitHub Release, e.g. `{"1.0.0":"2026-07-30"}`), `CHANGELOG_README` (only when the readme isn't at the repo root; `readme.txt` and `README.txt` are both found automatically), `CHANGELOG_STATUS` (`publish`|`draft`), `CHANGELOG_DATE_ORDER` (`dmy`|`mdy`).
 4. Go to Actions → **Publish changelog** → Run workflow, and tick **all** to load old versions.
@@ -130,7 +136,7 @@ Dates in the header are optional. `= 3.3.1 =` works, and the Action then uses th
 
 ## Tested
 
-End to end, from a private GitHub repo to a remote WordPress host. The test covered release publish, pre-release skip, manual backfill, re-send, draft, "Keep my edits", trash and HTML/XSS text. Rendering was also checked on an Elementor page (Shortcode widget, with Element Caching on): new entries appeared immediately. It also parsed real-world changelogs with 34 and 83 versions without error.
+End to end, from a private GitHub repo to a remote WordPress host. The test covered release publish, pre-release skip, manual backfill, re-send, draft, "Keep my edits", trash and HTML/XSS text. The after-deploy template was tested live: a successful deploy published afterwards, a failed deploy skipped the changelog, a pre-release was skipped, a burst of 3 releases plus 1 failed deploy lost nothing, and a manual publish after a fixed deploy worked. Rendering was also checked on an Elementor page (Shortcode widget, with Element Caching on): new entries appeared immediately. It also parsed real-world changelogs with 34 and 83 versions without error.
 
 ## License
 

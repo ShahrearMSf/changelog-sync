@@ -56,12 +56,24 @@ scripts/
 
 ## Install the skill
 
+**From the zip** (`changelog-sync-skill-<version>.zip`). It contains one folder, `changelog-sync/`:
+
 ```bash
-# per user
-git clone https://github.com/ShahrearMSf/changelog-sync ~/.claude/skills/changelog-sync
-# or per project
-git clone https://github.com/ShahrearMSf/changelog-sync <project>/.claude/skills/changelog-sync
+# for you, in every project
+unzip changelog-sync-skill-*.zip -d ~/.claude/skills/
+# or for one project only
+unzip changelog-sync-skill-*.zip -d <project>/.claude/skills/
 ```
+
+The result must be `~/.claude/skills/changelog-sync/SKILL.md`, not `…/changelog-sync/changelog-sync/SKILL.md`. Restart Claude Code if it's already open.
+
+**From the repository** (if you have access):
+
+```bash
+git clone https://github.com/ShahrearMSf/changelog-sync ~/.claude/skills/changelog-sync
+```
+
+**Requirements:** Claude Code, plus `bash`, `node` 18+, `php`, `openssl` and `zip` for the helper scripts (macOS or Linux; on Windows use WSL). The GitHub Action itself needs nothing installed.
 
 Then ask Claude Code something like "set up changelog sync for our plugin", or run `/changelog-sync`.
 

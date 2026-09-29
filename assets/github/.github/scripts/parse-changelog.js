@@ -13,7 +13,10 @@
  * body is used as a fallback source. Otherwise the script fails loudly.
  *
  * Env: CHANGELOG_PRODUCT, CHANGELOG_PRODUCT_NAME, CHANGELOG_STATUS,
- *      CHANGELOG_DATE_ORDER (dmy|mdy, default dmy), GITHUB_REPOSITORY.
+ *      CHANGELOG_DATE_ORDER (dmy|mdy, default dmy), GITHUB_REPOSITORY,
+ *      CHANGELOG_RELEASE_DATES_FILE (JSON {"1.2.0":"2026-08-26"} built from GitHub Releases),
+ *      CHANGELOG_EXTRA_DATES (JSON, same shape, for versions that never had a GitHub Release).
+ * Dates are only used for readme headers that have no date of their own.
  */
 'use strict';
 
@@ -23,7 +26,8 @@ const KNOWN_TYPES = [
   'Added', 'New', 'Fixed', 'Improved', 'Improvement', 'Updated', 'Update', 'Changed',
   'Removed', 'Deprecated', 'Security', 'Tweak', 'Tweaked', 'Revamped', 'Compatibility', 'Dev',
 ];
-const TYPE_RE = new RegExp('^(' + KNOWN_TYPES.join('|') + ')\\s*:\\s*', 'i');
+// "Fixed: text" or "Fixed - text" (dash needs surrounding space, so "Fixed-width …" stays plain text).
+const TYPE_RE = new RegExp('^(' + KNOWN_TYPES.join('|') + ')\\s*(?::\\s*|[-–—]\\s+)', 'i');
 const HEADER_RE = /^=\s*v?(\d[\w.\-+]*)\s*(?:[-–—|:]\s*(.*?))?\s*=\s*$/;
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
 
@@ -90,7 +94,7 @@ function parseItems(lines) {
   return items.filter((i) => i.text);
 }
 
-function parseReadme(src) {
+function parseReadme(src, knownDates = {}) {
   const lines = src.replace(/\r\n?/g, '\n').split('\n');
   const start = lines.findIndex((l) => /^==\s*Changelog\s*==\s*$/i.test(l.trim()));
   if (start === -1) throw new Error('No "== Changelog ==" section found');
@@ -109,11 +113,15 @@ function parseReadme(src) {
   }
   // An undated entry borrows the date of the newer entry above it, so a backfill
   // never floats an old version to the top (the version tie-break keeps it below).
+  // Date priority: readme header → knownDates (GitHub Release / CHANGELOG_EXTRA_DATES) →
+  // the newer entry above it (so a backfill never floats an old version to the top).
   let newer = null;
   return entries.map((e) => {
-    const date = e.date || newer;
-    if (e.date) newer = e.date;
-    return { version: e.version, date, date_raw: e.date_raw, dated: !!e.date, items: parseItems(e.body) };
+    const known = !e.date && knownDates[e.version] ? knownDates[e.version] : null;
+    const date = e.date || known || newer;
+    const date_source = e.date ? 'readme' : known ? 'release' : newer ? 'borrowed' : 'none';
+    if (e.date || known) newer = e.date || known;
+    return { version: e.version, date, date_raw: e.date_raw, dated: !!e.date, date_source, items: parseItems(e.body) };
   });
 }
 
@@ -131,6 +139,27 @@ function resolveReadme(wanted) {
   if (names.includes(base)) return wanted;
   const hit = names.find((n) => n.toLowerCase() === base.toLowerCase());
   return hit ? path.join(dir, hit) : null;
+}
+
+/** Release dates (file) + manual extra dates (env). Release dates win; bad values are ignored. */
+function knownDates() {
+  const load = (label, raw) => {
+    if (!raw || !raw.trim()) return {};
+    try {
+      const obj = JSON.parse(raw);
+      const out = {};
+      for (const [k, v] of Object.entries(obj || {})) {
+        if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)) out[String(k).replace(/^v/i, '')] = v;
+      }
+      return out;
+    } catch {
+      console.error(`::warning::${label} is not valid JSON; ignored`);
+      return {};
+    }
+  };
+  const file = process.env.CHANGELOG_RELEASE_DATES_FILE;
+  const fromFile = file && fs.existsSync(file) ? load(file, fs.readFileSync(file, 'utf8')) : {};
+  return { ...load('CHANGELOG_EXTRA_DATES', process.env.CHANGELOG_EXTRA_DATES), ...fromFile };
 }
 
 function readEvent() {
@@ -159,7 +188,7 @@ function main() {
   } else if (readmePath !== opt.readme) {
     opt.readme = readmePath;
   }
-  const entries = readmePath ? parseReadme(fs.readFileSync(readmePath, 'utf8')) : [];
+  const entries = readmePath ? parseReadme(fs.readFileSync(readmePath, 'utf8'), knownDates()) : [];
   const releaseDate = release && release.published_at ? release.published_at.slice(0, 10) : null;
   const today = new Date().toISOString().slice(0, 10);
 
@@ -170,7 +199,7 @@ function main() {
       ...base,
       version: e.version,
       // Undated single entry: the release's own publish date beats a borrowed one.
-      date: e.dated ? e.date : ((!opt.all && releaseDate) || e.date || today),
+      date: (e.date_source === 'readme' || e.date_source === 'release') ? e.date : ((!opt.all && releaseDate) || e.date || today),
       items: e.items,
       source,
       source_url: release ? release.html_url : (repo ? `https://github.com/${repo}` : ''),

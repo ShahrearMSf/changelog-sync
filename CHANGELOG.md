@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.4 - 2026-09-29
+- Fixed: `verify-endpoint.sh` reported "secret mismatch" when a security/2FA plugin blocked the REST API for visitors who aren't logged in. It now reads the error code and names the real cause: REST API restricted, firewall page, unreachable site, route missing, proxy stripping headers, or a genuine mismatch
+- Docs: 2FA doesn't affect the sync (the Action never logs in); what to allow when a security plugin restricts the REST API; Pro repos without a deploy workflow, and tag-only releases
+
 ## 1.3.3 - 2026-09-29
 - Security: `verify-endpoint.sh` asks for the secret with hidden input (or reads a file / `CHANGELOG_SECRET`), signs in Node from the environment so the secret is never on a command line visible in `ps`, and uses a private `mktemp` file, not a predictable `/tmp` name. Docs no longer suggest writing the secret to a file or typing it into a command
 

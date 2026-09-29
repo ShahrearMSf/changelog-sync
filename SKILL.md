@@ -77,12 +77,17 @@ product writes US dates.
 5. `scripts/verify-endpoint.sh https://site.com` → prompts for the secret (hidden) → must print `401` then
    `422` and `OK`. Automation: pass a `umask 077` file as 2nd arg or `CHANGELOG_SECRET` in env. Never put
    the secret on a command line (`ps`-visible) or in shell history.
+   2FA never blocks the sync (the Action does not log in; the HMAC signature is the auth). REST-lockdown /
+   security plugins can: verify-endpoint reports "REST API is restricted" → allowlist
+   `POST /wp-json/changelog-sync/v1/entry` in that plugin.
 
 ### 4. Each product repo (with permission)
 1. Copy `assets/github/.github/scripts/` + **one** workflow into the repo (default branch):
    - Repo has a deploy workflow (WordPress.org etc.) → `publish-changelog-after-deploy.yml`: runs only
      after the deploy **succeeds**; failed deploy = changelog skipped. Its `workflows: ["…"]` must equal the
      deploy workflow's `name:` (no variables allowed there); workflow_run fires from the default branch only.
+   - Pro / no deploy workflow → `publish-changelog.yml`; needs a published GitHub **Release** (a bare tag
+     does not trigger it — publish a Release or use Run workflow with `version`).
    - No deploy workflow → `publish-changelog.yml` (runs on release published).
    Never install both (preflight fails).
 2. Secrets (repo → Settings → Secrets and variables → Actions → New repository secret):

@@ -11,6 +11,8 @@
 | HTTP 401 `changelog_bad_signature` | Repo secret ≠ site secret (whitespace/newline when pasting) | Re-set both from one file: `gh secret set CHANGELOG_SECRET < file` |
 | HTTP 401 `changelog_stale` | Proxy/WAF stripped custom headers, or server clock off by >5 min | Allow `X-Changelog-*` headers; fix NTP |
 | HTTP 503 `changelog_disabled` | Secret not configured on the site | Changelog → Settings, or `wp-config.php` constant |
+| HTTP 401 `rest_not_logged_in` / `rest_forbidden` (or verify says "REST API is restricted") | A security or 2FA plugin limits the REST API to logged-in users; the receiver never sees the request | In that plugin, allow `POST /wp-json/changelog-sync/v1/entry` for unauthenticated requests (the HMAC signature is the auth). 2FA itself is not the cause |
+| Release on a Pro repo, nothing ran | Only a tag was pushed; `publish-changelog.yml` needs a published GitHub Release | Publish a Release for the tag, or Actions → Publish changelog → Run workflow with `version` |
 | HTTP 403 / HTML challenge page | Cloudflare / WAF / security plugin blocking GitHub runners | Allow `POST /wp-json/changelog-sync/v1/entry` by path |
 | HTTP 404 `rest_no_route` | Plugin inactive, or REST API disabled / pretty permalinks off | Activate; test `https://site/?rest_route=/changelog-sync/v1/entry` and use that as endpoint |
 | `skipped_locked` | Someone ticked "Keep my edits" | Untick in the entry's Release box, re-run |

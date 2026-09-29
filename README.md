@@ -102,6 +102,10 @@ The GitHub Action needs two repository secrets to deliver entries to your site:
 
 To change the secret later, generate a new one the same way and update `CHANGELOG_SECRET` in GitHub. The old one stops working immediately.
 
+**Sites with 2FA or security plugins.** The Action never logs in to WordPress: no username, password or cookie. The signature is its authentication, so **2FA does not affect it**. 2FA only matters once, when an admin logs in to install the plugin (and with the secret in `wp-config.php`, not even then). What *can* block it is a security plugin or firewall that restricts the REST API to logged-in users, or challenges unknown visitors. In that case allow `POST /wp-json/changelog-sync/v1/entry` in the plugin or firewall. `verify-endpoint.sh` recognises this and says so.
+
+**Pro and other repos without a WordPress.org deploy.** Use `publish-changelog.yml`, which runs when a GitHub Release is published. It needs a published **Release**, not just a pushed tag. If a repo only pushes tags, either publish a Release for the tag, or run *Actions → Publish changelog → Run workflow* with the version.
+
 ## Quick start (without Claude)
 
 **1. Website (once per site)**

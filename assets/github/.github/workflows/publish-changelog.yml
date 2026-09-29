@@ -32,8 +32,10 @@ on:
         type: boolean
         default: false
 
+# One queue PER VERSION: GitHub keeps only one pending run per group and cancels older
+# pending ones, so a per-repo group could silently drop a release that finished close to another.
 concurrency:
-  group: changelog-${{ github.repository }}
+  group: changelog-${{ github.repository }}-${{ github.event.release.tag_name || inputs.version || github.run_id }}
   cancel-in-progress: false
 
 permissions:
